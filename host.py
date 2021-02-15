@@ -74,10 +74,10 @@ class Server(threading.Thread):
 
 """
 Point [[x, y], color]
-Ligne [[x, y], [x, y], color, with]
+Ligne [[x, y], [x, y], color, width]
 Rect [[x, y], [x, y], color]
-Circle [[x, y], color, with]
-Polygon [points, color, width]
+Circle [[x, y], color, width]
+Polygon [[x, y],...] color width
 """
 class Instruction():
     def __init__(self, Type, data):
@@ -85,16 +85,11 @@ class Instruction():
         self.data = data
 
 class pictoChatServer():
-    def __init__(self, port = 3630):
-        pygame.init()
-        self.window_x = 800
-        self.window_y = 800
-        self.window = pygame.display.set_mode((self.window_x, self.window_y))
+    def __init__(self, window, port = 3630):
+        self.window = window
         self.server = Server(port)
         self.server.start()
-        self.T = time.time()
         self.instructions = {
-            "Point" : self.drawPoint,
             "Ligne" : self.drawLigne, 
             "Rect" : self.drawRect, 
             "Circle" : self.drawCircle, 
@@ -111,56 +106,53 @@ class pictoChatServer():
                     self.sendToAll(msg)
                 except:
                     print("failed to do instruction" + str(msg))
-
-        for event in pygame.event.get():
-            if (event.type == QUIT):
-                os._exit(0)
-
-        #wait for the frame
-        T2 = time.time()-self.T
-        if T2 < 1/60:
-            time.sleep(1/60-T2)
-        self.T = time.time()
-        pygame.display.flip()
         
     def sendToAll(self, instruction):
         for client in self.server.clients:
-            client.send(instruction)
-            print("send")
+            try:
+                client.send(instruction)
+            except:
+                pass
+    def drawLigne(self, p1, p2, color, width = 1):
+        pygame.draw.line(self.window, color, p1, p2, width)
 
-    def drawPoint(self, data, send = 1):
-        pass
-
-    def drawLigne(self, data, send = 1):
-        pass
-
-    def drawRect(self, p1, p2, color, send = 1):
+    def drawRect(self, p1, p2, color):
         rect = Rect(p1, p2)
         pygame.draw.rect(self.window, color, rect)
 
-    def drawCircle(self, data, send = 1):
-        pass
+    def drawCircle(self, p, color, r):
+        pygame.draw.circle(self.window, color, p, r)
 
-    def drawPolygon(self, data, send = 1):
-        pass
+    def drawPolygon(self, points, color, width = 0):
+        pygame.draw.polygon(self.window, color, points, width)
 
+
+pygame.init()
+window_x = 800
+window_y = 800
+window = pygame.display.set_mode((window_x, window_y))
 
 chat = 0
-chat = pictoChatServer(3630)
-#for port in ip_list:
-#    try:
-#        chat = pictoChat("127.0.0.1", port)
-#        break
-#    except:
-#        pass
+chat = pictoChatServer(window, 3630)
 
 if (chat == 0):
     print("connexion failed")
     exit(0)
 
 go = 1
+T = time.time()
 while go:
     chat.display()
+    for event in pygame.event.get():
+        if (event.type == QUIT):
+            os._exit(0)
+
+    #wait for the frame
+    T2 = time.time()-T
+    if T2 < 1/60:
+        time.sleep(1/60-T2)
+    T = time.time()
+    pygame.display.flip()
 
 server.stop()
 print("exiting")

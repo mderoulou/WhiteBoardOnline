@@ -4,10 +4,12 @@ import time
 from pygame.locals import *
 import math
 
+import os
 import socket
 import pickle
 import threading
 import ctypes
+import sys
 
 ip_list = [3630, 3640, 3650, 4242, 5050]
 
@@ -74,7 +76,7 @@ Point [[x, y], color]
 Ligne [[x, y], [x, y], color, with]
 Rect [[x, y], [x, y], color]
 Circle [[x, y], color, with]
-Polygon [[[x, y]...], color]
+Polygon [[[x, y]...], color, with]
 """
 class Instruction():
     def __init__(self, Type, data):
@@ -82,19 +84,14 @@ class Instruction():
         self.data = data
 
 class pictoChat():
-    def __init__(self, ip, port = 3630):
-        pygame.init()
-        self.window_x = 800
-        self.window_y = 800
-        self.window = pygame.display.set_mode((self.window_x, self.window_y))
+    def __init__(self, window, ip, port = 3630):
+        self.window = window
         s = socket.socket()
         s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
         s.connect((ip, port))
         self.client = Server.Client(s)
         self.client.start()
-        self.T = time.time()
         self.instructions = {
-            "Point" : self.drawPoint,
             "Ligne" : self.drawLigne, 
             "Rect" : self.drawRect, 
             "Circle" : self.drawCircle, 
@@ -109,71 +106,89 @@ class pictoChat():
                 self.instructions[msg.Type](*msg.data)
             except:
                 print("failed to do instruction")
-
-        #pygame events
-        for event in pygame.event.get():
-            if (event.type == QUIT):
-                os._exit(0)
-
-        #wait for the frame
-        T2 = time.time()-self.T
-        if T2 < 1/60:
-            time.sleep(1/60-T2)
-        self.T = time.time()
-        pygame.display.flip()
        
+    def drawLigne(self, p1, p2, color, width = 1):
+        pygame.draw.line(self.window, color, p1, p2, width)
 
-    def drawPoint(self, data, send = 1):
-        pass
-
-    def drawLigne(self, data, send = 1):
-        pass
-
-    def drawRect(self, p1, p2, color, send = 1):
-        #p1, p2, color, send = data
+    def drawRect(self, p1, p2, color):
         rect = Rect(p1, p2)
         pygame.draw.rect(self.window, color, rect)
 
-    def drawCircle(self, data, send = 1):
-        pass
+    def drawCircle(self, p, color, r):
+        pygame.draw.circle(self.window, color, p, r)
 
-    def drawPolygon(self, data, send = 1):
-        pass
+    def drawPolygon(self, points, color, width = 0):
+        pygame.draw.polygon(self.window, color, points, width)
 
-    def sendPoint(self, data, send = 1):
-        pass
+    def sendPoint(self, p, color):
+        self.sendRect(p, [1, 1], color)
 
-    def sendLigne(self, data, send = 1):
-        pass
+    def sendLigne(self, p1, p2, color, width = 1):
+        self.client.send(Instruction("Ligne", [p1, p2, color, width]))
 
-    def sendRect(self, p1, p2, color, send = 1):
+    def sendRect(self, p1, p2, color):
         rect = Rect(p1, p2)
         self.client.send(Instruction("Rect", [p1, p2, color]))
 
-    def sendCircle(self, data, send = 1):
-        pass
+    def sendCircle(self, p, color, r):
+        self.client.send(Instruction("Circle",[p, color, r]))
 
-    def sendPolygon(self, data, send = 1):
-        pass
+    def sendPolygon(self, points, color, width = 0):
+        self.client.send(Instruction("Polygon", [points, color, width]))
+
+pygame.init()
+window_x = 800
+window_y = 800
+window = pygame.display.set_mode((window_x, window_y))
 
 chat = 0
-chat = pictoChat("127.0.0.1", 3630)
-#for port in ip_list:
-#    try:
-#        chat = pictoChat("127.0.0.1", port)
-#        break
-#    except:
-#        pass
+ip = "127.0.0.1"
+if len(sys.argv) > 1:
+    ip = sys.argv[1]
+
+chat = pictoChat(window, ip, 3630)
 
 if (chat == 0):
     print("connexion failed")
     exit(0)
 
 chat.sendRect([100, 100], [100, 100], (255, 0, 0))
+chat.sendCircle([150, 100], (255, 0, 0), 30)
+chat.sendLigne([0, 0], [300, 300], (255, 255, 255), 5)
+chat.sendPoint([500, 500], (0, 0, 255))
+chat.sendPolygon([[400, 400], [500, 500], [350, 500], [350, 200]], (100, 100, 100), 0)
 
 go = 1
+T = time.time()
+mouse_prev_pos = (0, 0)
+mouse_pos = (0, 0)
 while go:
     chat.display()
+
+    #pygame events
+    for event in pygame.event.get():
+        if (event.type == QUIT):
+            os._exit(0)
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            print(event)
+            #chat.sendRect(event.pos, [10, 10], (0, 255, 0))
+
+
+    buttons = pygame.mouse.get_pressed()
+    mouse_prev_pos = mouse_pos
+    mouse_pos = pygame.mouse.get_pos()
+    if (buttons[0] == True):
+        chat.sendCircle(mouse_pos, (255, 255, 255), 4)
+        chat.sendCircle(mouse_prev_pos, (255, 255, 255), 4)
+        chat.sendLigne(mouse_prev_pos, mouse_pos, (255, 255, 255), 9)
+
+
+    #wait for the frame
+    T2 = time.time()-T
+    if T2 < 1/60:
+        time.sleep(1/60-T2)
+    T = time.time()
+    pygame.display.flip()
 
 print("exiting")
 os._exit(0)
