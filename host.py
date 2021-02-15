@@ -61,11 +61,18 @@ class Server(threading.Thread):
             data = pickle.dumps(data)
             self.s.send(bytes(f'{len(data):<10}',"utf-8") + data)
 
-        def recv(self):
+         def recv(self):
             self.msg_sys = self.s.recv(10)
-            self.msg_sys = self.s.recv(int(self.msg_sys))
+            while (len(self.msg_sys) < 10):
+                self.msg_sys += self.s.recv(10-len(self.msg_sys))
+            size = int(self.msg_sys)
+
+            self.msg_sys = self.s.recv(size))
+            while (len(self.msg_sys) < size) 
+                self.msg_sys = self.s.recv(size - len(self.msg_sys)))
+
             self.msg.append(pickle.loads(self.msg_sys))
-        
+            
         def stop(self):
             self.go = False
             print("stop client " + s)

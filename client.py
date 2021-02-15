@@ -61,9 +61,14 @@ class Server(threading.Thread):
 
         def recv(self):
             self.msg_sys = self.s.recv(10)
-            
-            self.msg_sys = self.s.recv(int(self.msg_sys))
-            print("rcvd")
+            while (len(self.msg_sys) < 10):
+                self.msg_sys += self.s.recv(10-len(self.msg_sys))
+            size = int(self.msg_sys)
+
+            self.msg_sys = self.s.recv(size))
+            while (len(self.msg_sys) < size) 
+                self.msg_sys = self.s.recv(size - len(self.msg_sys)))
+
             self.msg.append(pickle.loads(self.msg_sys))
         
         def stop(self):
@@ -146,17 +151,20 @@ ip = "127.0.0.1"
 if len(sys.argv) > 1:
     ip = sys.argv[1]
 
+print(ip)
 chat = pictoChat(window, ip, 3630)
 
 if (chat == 0):
     print("connexion failed")
     exit(0)
 
-chat.sendRect([100, 100], [100, 100], (255, 0, 0))
-chat.sendCircle([150, 100], (255, 0, 0), 30)
-chat.sendLigne([0, 0], [300, 300], (255, 255, 255), 5)
-chat.sendPoint([500, 500], (0, 0, 255))
-chat.sendPolygon([[400, 400], [500, 500], [350, 500], [350, 200]], (100, 100, 100), 0)
+
+for x in range(0, 100):
+    chat.sendRect([100, 100], [100, 100], (255, 0, 0))
+    chat.sendCircle([150, 100], (255, 0, 0), 30)
+    chat.sendLigne([0, 0], [300, 300], (255, 255, 255), 5)
+    chat.sendPoint([500, 500], (0, 0, 255))
+    chat.sendPolygon([[400, 400], [500, 500], [350, 500], [350, 200]], (100, 100, 100), 0)
 
 go = 1
 T = time.time()
