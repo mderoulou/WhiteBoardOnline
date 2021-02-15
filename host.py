@@ -10,6 +10,7 @@ import pickle
 import threading
 import ctypes
 
+ip_list = [3630, 3640, 3650, 4242, 5050]
 
 class Server(threading.Thread):
     def __init__(self, port):
@@ -18,6 +19,10 @@ class Server(threading.Thread):
         self.clients = [] # array of Clients
         self.clients_sockets = [] # array of socket
         self.listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self.listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        except:
+            pass
         self.listen_socket.bind(("", port))
         self.listen_socket.listen(16)
         self.go = True
@@ -54,13 +59,12 @@ class Server(threading.Thread):
 
         def send(self, data):
             data = pickle.dumps(data)
-            self.s.send(bytes(f'{len(self.msg_send):<10}',"utf-8") + self.msg_send)
+            self.s.send(bytes(f'{len(data):<10}',"utf-8") + data)
 
         def recv(self):
             self.msg_sys = self.s.recv(10)
             self.msg_sys = self.s.recv(int(self.msg_sys))
             self.msg.append(pickle.loads(self.msg_sys))
-            return msg
         
         def stop(self):
             self.go = False
@@ -77,51 +81,87 @@ Polygon [points, color, width]
 """
 class Instruction():
     def __init__(self, Type, data):
-        self.Type = ""
-        self.data = []
-    
-class pictoChat():
-    def __init__(self):
+        self.Type = Type
+        self.data = data
+
+class pictoChatServer():
+    def __init__(self, port = 3630):
         pygame.init()
         self.window_x = 800
         self.window_y = 800
-        self.window = pygame.display.set_mode((window_x, window_y))
+        self.window = pygame.display.set_mode((self.window_x, self.window_y))
+        self.server = Server(port)
+        self.server.start()
+        self.T = time.time()
+        self.instructions = {
+            "Point" : self.drawPoint,
+            "Ligne" : self.drawLigne, 
+            "Rect" : self.drawRect, 
+            "Circle" : self.drawCircle, 
+            "Polygon" : self.drawPolygon
+        }
 
-    def drawPoint(self, data):
+    def display(self):
+        #fetch and send drawing
+        for client in self.server.clients:
+            while len(client.msg):
+                msg = client.msg.pop(0)
+                try:
+                    self.instructions[msg.Type](*msg.data)
+                    self.sendToAll(msg)
+                except:
+                    print("failed to do instruction" + str(msg))
+
+        for event in pygame.event.get():
+            if (event.type == QUIT):
+                os._exit(0)
+
+        #wait for the frame
+        T2 = time.time()-self.T
+        if T2 < 1/60:
+            time.sleep(1/60-T2)
+        self.T = time.time()
+        pygame.display.flip()
+        
+    def sendToAll(self, instruction):
+        for client in self.server.clients:
+            client.send(instruction)
+            print("send")
+
+    def drawPoint(self, data, send = 1):
+        pass
+
+    def drawLigne(self, data, send = 1):
+        pass
+
+    def drawRect(self, p1, p2, color, send = 1):
+        rect = Rect(p1, p2)
         pygame.draw.rect(self.window, color, rect)
 
-    def drawLigne(self, data):
+    def drawCircle(self, data, send = 1):
         pass
 
-    def drawRect(self, data):
-        pass
-
-    def drawCircle(self, data):
-        pass
-
-    def drawPolygon(self, data):
+    def drawPolygon(self, data, send = 1):
         pass
 
 
+chat = 0
+chat = pictoChatServer(3630)
+#for port in ip_list:
+#    try:
+#        chat = pictoChat("127.0.0.1", port)
+#        break
+#    except:
+#        pass
 
-server = Server(port=3630)
-server.start()
-
-pygame.init()
-window_x = 800
-window_y = 800
-window = pygame.display.set_mode((window_x, window_y))
+if (chat == 0):
+    print("connexion failed")
+    exit(0)
 
 go = 1
 while go:
-    for event in pygame.event.get():
-        if (event.type == QUIT):
-            go = 0
+    chat.display()
 
-    for client in server.clients:
-        while len(client.msg) > 0:
-            print(client.msg.pop(0))
-            
 server.stop()
-os._exit(1)
 print("exiting")
+os._exit(1)

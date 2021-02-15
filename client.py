@@ -9,6 +9,7 @@ import pickle
 import threading
 import ctypes
 
+ip_list = [3630, 3640, 3650, 4242, 5050]
 
 class Server(threading.Thread):
     def __init__(self, port):
@@ -54,13 +55,14 @@ class Server(threading.Thread):
 
         def send(self, data):
             data = pickle.dumps(data)
-            self.s.send(bytes(f'{len(self.msg_send):<10}',"utf-8") + self.msg_send)
+            self.s.send(bytes(f'{len(data):<10}',"utf-8") + data)
 
         def recv(self):
             self.msg_sys = self.s.recv(10)
+            
             self.msg_sys = self.s.recv(int(self.msg_sys))
+            print("rcvd")
             self.msg.append(pickle.loads(self.msg_sys))
-            return msg
         
         def stop(self):
             self.go = False
@@ -76,8 +78,8 @@ Polygon [[[x, y]...], color]
 """
 class Instruction():
     def __init__(self, Type, data):
-        self.Type = ""
-        self.data = []
+        self.Type = Type
+        self.data = data
 
 class pictoChat():
     def __init__(self, ip, port = 3630):
@@ -88,51 +90,90 @@ class pictoChat():
         s = socket.socket()
         s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
         s.connect((ip, port))
-        self.client = s
+        self.client = Server.Client(s)
+        self.client.start()
+        self.T = time.time()
         self.instructions = {
-            {"Point" : self.drawPoint},
-            {"Ligne" : self.drawLigne}, 
-            {"Rect" : self.drawRect}, 
-            {"Circle" : self.drawCircle}, 
-            {"Polygon" : self.drawPolygon}
+            "Point" : self.drawPoint,
+            "Ligne" : self.drawLigne, 
+            "Rect" : self.drawRect, 
+            "Circle" : self.drawCircle, 
+            "Polygon" : self.drawPolygon
         }
 
-    def fetch(self):
-        for msg in self.client.msg:
+    def display(self):
+        #fetch drawing
+        while len(self.client.msg):
+            msg = self.client.msg.pop(0)
             try:
-                self.instructions[msg.Type](msg.Type)
+                self.instructions[msg.Type](*msg.data)
             except:
                 print("failed to do instruction")
-            
 
-    def drawPoint(self, point, color):
+        #pygame events
+        for event in pygame.event.get():
+            if (event.type == QUIT):
+                os._exit(0)
+
+        #wait for the frame
+        T2 = time.time()-self.T
+        if T2 < 1/60:
+            time.sleep(1/60-T2)
+        self.T = time.time()
+        pygame.display.flip()
+       
+
+    def drawPoint(self, data, send = 1):
         pass
 
-    def drawLigne(self):
+    def drawLigne(self, data, send = 1):
         pass
 
     def drawRect(self, p1, p2, color, send = 1):
+        #p1, p2, color, send = data
         rect = Rect(p1, p2)
         pygame.draw.rect(self.window, color, rect)
-        if send:
-            self.client.send(Instruction("Rect", p1, p2, color))
 
-    def drawCircle(self):
+    def drawCircle(self, data, send = 1):
         pass
 
-    def drawPolygon(self):
+    def drawPolygon(self, data, send = 1):
         pass
 
+    def sendPoint(self, data, send = 1):
+        pass
 
+    def sendLigne(self, data, send = 1):
+        pass
 
+    def sendRect(self, p1, p2, color, send = 1):
+        rect = Rect(p1, p2)
+        self.client.send(Instruction("Rect", [p1, p2, color]))
 
+    def sendCircle(self, data, send = 1):
+        pass
+
+    def sendPolygon(self, data, send = 1):
+        pass
+
+chat = 0
 chat = pictoChat("127.0.0.1", 3630)
+#for port in ip_list:
+#    try:
+#        chat = pictoChat("127.0.0.1", port)
+#        break
+#    except:
+#        pass
+
+if (chat == 0):
+    print("connexion failed")
+    exit(0)
+
+chat.sendRect([100, 100], [100, 100], (255, 0, 0))
 
 go = 1
 while go:
-    for event in pygame.event.get():
-        if (event.type == QUIT):
-            go = 0
-
+    chat.display()
 
 print("exiting")
+os._exit(0)
