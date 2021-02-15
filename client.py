@@ -159,7 +159,7 @@ if (chat == 0):
     exit(0)
 
 
-for x in range(0, 100):
+for x in range(0, 1):
     chat.sendRect([100, 100], [100, 100], (255, 0, 0))
     chat.sendCircle([150, 100], (255, 0, 0), 30)
     chat.sendLigne([0, 0], [300, 300], (255, 255, 255), 5)
