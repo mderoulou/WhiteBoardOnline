@@ -166,37 +166,43 @@ for x in range(0, 1):
     chat.sendPoint([500, 500], (0, 0, 255))
     chat.sendPolygon([[400, 400], [500, 500], [350, 500], [350, 200]], (100, 100, 100), 0)
 
-go = 1
-T = time.time()
-mouse_prev_pos = (0, 0)
-mouse_pos = (0, 0)
+go = 1 #Main loop variable
+T = time.time() #Define time varaible
+mouse_prev_pos = (0, 0) #Previous coordinates of mouse
+mouse_pos = (0, 0) #Original mouse position
+current_tool = 0 # Define the current tool
 while go:
     chat.display()
-
-    #pygame events
-    for event in pygame.event.get():
-        if (event.type == QUIT):
+    for event in pygame.event.get(): #Loop on all pygame events
+        if (event.type == QUIT): #User close his window
             os._exit(0)
-        elif event.type == pygame.MOUSEBUTTONDOWN:
+        elif event.type == pygame.MOUSEBUTTONDOWN: #Print debug if mouse btn is pressed
             print(event)
             #chat.sendRect(event.pos, [10, 10], (0, 255, 0))
-
-
+        elif event.type == pygame.KEYDOWN: #If any key is pressed
+            if (event.key == pygame.K_a): # if Key 'a' is pressed
+                current_tool = (current_tool + 1) % 2 #Change tool always inferior to 2
+    
     buttons = pygame.mouse.get_pressed()
     mouse_prev_pos = mouse_pos
     mouse_pos = pygame.mouse.get_pos()
     if (buttons[0] == True):
-        chat.sendCircle(mouse_pos, (255, 255, 255), 4)
-        chat.sendCircle(mouse_prev_pos, (255, 255, 255), 4)
-        chat.sendLigne(mouse_prev_pos, mouse_pos, (255, 255, 255), 9)
+        if (current_tool == 0): #If it's tool 1
+            chat.sendCircle(mouse_pos, (255, 255, 255), 4) #Draw circle to pos
+            chat.sendCircle(mouse_prev_pos, (255, 255, 255), 4) # Draw circle to old_pos
+            chat.sendLigne(mouse_prev_pos, mouse_pos, (255, 255, 255), 9) #Draw a line between theses pos
+        else: # Or tool 2
+            chat.sendCircle(mouse_pos, (0, 0, 0), 20)
+            chat.sendCircle(mouse_prev_pos, (0, 0, 0), 20)
+            chat.sendLigne(mouse_prev_pos, mouse_pos, (0, 0, 0), 30)
 
-
-    #wait for the frame
+    #Frame rate System
     T2 = time.time()-T
     if T2 < 1/60:
         time.sleep(1/60-T2)
     T = time.time()
     pygame.display.flip()
 
+#End of program
 print("exiting")
 os._exit(0)
