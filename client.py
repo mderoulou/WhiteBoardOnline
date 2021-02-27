@@ -66,16 +66,16 @@ class Server(threading.Thread):
             size = int(self.msg_sys)
 
             self.msg_sys = self.s.recv(size)
-            while len(self.msg_sys) < size: 
+            while len(self.msg_sys) < size:
                 self.msg_sys = self.s.recv(size - len(self.msg_sys))
 
             self.msg.append(pickle.loads(self.msg_sys))
-        
+
         def stop(self):
             self.go = False
             print("stop client " + s)
             self.s.shutdown(socket.SHUT_WR)
-        
+
 """
 Point [[x, y], color]
 Ligne [[x, y], [x, y], color, with]
@@ -97,9 +97,9 @@ class pictoChat():
         self.client = Server.Client(s)
         self.client.start()
         self.instructions = {
-            "Ligne" : self.drawLigne, 
-            "Rect" : self.drawRect, 
-            "Circle" : self.drawCircle, 
+            "Ligne" : self.drawLigne,
+            "Rect" : self.drawRect,
+            "Circle" : self.drawCircle,
             "Polygon" : self.drawPolygon
         }
 
@@ -111,7 +111,7 @@ class pictoChat():
                 self.instructions[msg.Type](*msg.data)
             except:
                 print("failed to do instruction")
-       
+
     def drawLigne(self, p1, p2, color, width = 1):
         pygame.draw.line(self.window, color, p1, p2, width)
 
@@ -147,7 +147,7 @@ window_y = 800
 window = pygame.display.set_mode((window_x, window_y))
 
 chat = 0
-ip = "127.0.0.1"
+ip = "82.64.203.50"
 if len(sys.argv) > 1:
     ip = sys.argv[1]
 
@@ -157,14 +157,6 @@ chat = pictoChat(window, ip, 3630)
 if (chat == 0):
     print("connexion failed")
     exit(0)
-
-
-for x in range(0, 1):
-    chat.sendRect([100, 100], [100, 100], (255, 0, 0))
-    chat.sendCircle([150, 100], (255, 0, 0), 30)
-    chat.sendLigne([0, 0], [300, 300], (255, 255, 255), 5)
-    chat.sendPoint([500, 500], (0, 0, 255))
-    chat.sendPolygon([[400, 400], [500, 500], [350, 500], [350, 200]], (100, 100, 100), 0)
 
 go = 1 #Main loop variable
 T = time.time() #Define time varaible
@@ -182,7 +174,7 @@ while go:
         elif event.type == pygame.KEYDOWN: #If any key is pressed
             if (event.key == pygame.K_a): # if Key 'a' is pressed
                 current_tool = (current_tool + 1) % 2 #Change tool always inferior to 2
-    
+
     buttons = pygame.mouse.get_pressed()
     mouse_prev_pos = mouse_pos
     mouse_pos = pygame.mouse.get_pos()
